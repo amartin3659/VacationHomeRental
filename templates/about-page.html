@@ -1,0 +1,22 @@
+{{template "base" .}}
+{{define "content"}}
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h1>This is the about page</h1>
+      Loreipsum dolor sit amet, qui minim labore adipisicing minim sint cillum sint consectetur cupidatat.
+      <p>Rick's sidekick Morty doesn't really have a catchphrase but likes to say something like {{index .StringMap "morty"}}</p>
+      <p>
+        {{if ne (index .StringMap "remote_ip") "" }}
+          Your ip is: {{index .StringMap "remote_ip"}}
+        {{else}}
+          No idea what your ip address is. Go to the <a href="/">Home page</a> So I can grab it.
+        {{end}}
+      </p>
+      <p>
+        <img src="/static/images/architecture-1477103_1280.jpg" height="720" width="1280">
+      </p>
+    </div>
+  </div>
+</div>
+{{end}}
