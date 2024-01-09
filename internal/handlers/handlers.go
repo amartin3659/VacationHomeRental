@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/amartin3659/VacationHomeRental/internal/config"
+	"github.com/amartin3659/VacationHomeRental/internal/forms"
 	"github.com/amartin3659/VacationHomeRental/internal/models"
 	"github.com/amartin3659/VacationHomeRental/internal/render"
 )
@@ -99,5 +100,69 @@ func (m *Repository) ReservationJSON(w http.ResponseWriter, r *http.Request) {
 
 // MakeReservation is the handler for the make-reservation page
 func (m *Repository) MakeReservation(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "make-reservation-page.html", &models.TemplateData{})
+  var emptyReservation models.Reservation
+
+  data := make(map[string]interface{})
+  data["reservation"] = emptyReservation
+
+	render.RenderTemplate(w, r, "make-reservation-page.html", &models.TemplateData{
+    Form: forms.New(nil),
+    Data: data,
+  })
+}
+
+// PostMakeReservation is the POST request handler for the reservation form
+func (m *Repository) PostMakeReservation(w http.ResponseWriter, r *http.Request) {
+  err := r.ParseForm()
+  if err != nil {
+    log.Println(err)
+    return
+  }
+
+  reservation := models.Reservation{
+    Name: r.Form.Get("full_name"),
+    Email: r.Form.Get("email"),
+    Phone: r.Form.Get("phone"),
+  }
+
+  form := forms.New(r.PostForm)
+
+  form.Required("full_name", "email")
+  form.MinLength("full_name", 2, r)
+  form.IsEmail("email")
+
+  if !form.Valid() {
+    data := make(map[string]interface{})
+    data["reservation"] = reservation
+
+    render.RenderTemplate(w, r, "make-reservation-page.html", &models.TemplateData{
+      Form: form,
+      Data: data,
+    })
+
+    return
+  }
+
+  m.App.Session.Put(r.Context(), "reservation", reservation)
+  http.Redirect(w, r, "/reservation-overview", http.StatusSeeOther)
+}
+
+// ReservationOveriew displays the reservation summary page
+func (m *Repository) ReservationOverview(w http.ResponseWriter, r *http.Request) {
+  reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+  if !ok {
+    log.Println("Could not get item from session")
+    m.App.Session.Put(r.Context(), "error", "No reservation data in this session available.")
+    http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+    return
+  }
+
+  m.App.Session.Remove(r.Context(), "reservation")
+
+  data := make(map[string]interface{})
+  data["reservation"] = reservation
+
+  render.RenderTemplate(w, r, "reservation-overview-page.html", &models.TemplateData{
+    Data: data,
+  }) 
 }
