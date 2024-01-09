@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/amartin3659/VacationHomeRental/pkg/config"
-	"github.com/amartin3659/VacationHomeRental/pkg/handlers"
-	"github.com/amartin3659/VacationHomeRental/pkg/render"
+	"github.com/amartin3659/VacationHomeRental/internal/config"
+	"github.com/amartin3659/VacationHomeRental/internal/handlers"
+	"github.com/amartin3659/VacationHomeRental/internal/render"
 )
 
 const portNumber = ":8080"
