@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
+	env "github.com/amartin3659/VacationHomeRental/cmd"
 	"github.com/amartin3659/VacationHomeRental/internal/config"
+	"github.com/amartin3659/VacationHomeRental/internal/driver"
 	"github.com/amartin3659/VacationHomeRental/internal/handlers"
 	"github.com/amartin3659/VacationHomeRental/internal/helpers"
 	"github.com/amartin3659/VacationHomeRental/internal/models"
@@ -24,10 +26,13 @@ var infoLog *log.Logger
 var errorLog *log.Logger
 
 func main() {
-  err := run()
+  db, err := run()
   if err != nil {
     log.Fatal(err)
   }
+
+  defer db.SQL.Close()
+
 	fmt.Println("Starting server on port: ", portNumber)
 
 	src := &http.Server{
@@ -41,7 +46,7 @@ func main() {
 	}
 }
 
-func run() error {
+func run() (*driver.DB, error) {
 
   // Data to be available in the session
   gob.Register(models.Reservation{})
@@ -62,22 +67,33 @@ func run() error {
 
 	app.Session = session
 
+  // connecting to database
+  log.Println("Conecting to database...")
+  env.SetPass()
+  connStr := fmt.Sprintf("host=localhost port=5432 dbname=mygowebapp user=%s password=%s", env.GetUser(), env.GetPass())
+  db, err := driver.ConnectSQL(connStr)
+  if err != nil {
+    log.Fatal("No connection to database! Terminating ...")
+    return nil, err
+  }
+  log.Println("Successfully connected to database.")
+
 	// create a template cache
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatalln("Error creating template cache", err)
-    return err
+    return nil, err
 	}
 
 	app.TemplateCache = tc
 	app.UseCache = false
 
-	repo := handlers.NewRepo(&app)
+	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
 
 	render.NewTemplates(&app)
 
   helpers.NewHelpers(&app)
-  return nil
+  return db, nil
 }
 

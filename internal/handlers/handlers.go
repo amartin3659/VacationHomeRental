@@ -6,23 +6,28 @@ import (
 	"net/http"
 
 	"github.com/amartin3659/VacationHomeRental/internal/config"
+	"github.com/amartin3659/VacationHomeRental/internal/driver"
 	"github.com/amartin3659/VacationHomeRental/internal/forms"
 	"github.com/amartin3659/VacationHomeRental/internal/helpers"
 	"github.com/amartin3659/VacationHomeRental/internal/models"
 	"github.com/amartin3659/VacationHomeRental/internal/render"
+	"github.com/amartin3659/VacationHomeRental/internal/repository"
+	"github.com/amartin3659/VacationHomeRental/internal/repository/dbrepo"
 )
 
 type Repository struct {
 	App *config.AppConfig
+  DB repository.DatabaseRepo
 }
 
 // Repo the repository used by the handlers
 var Repo *Repository
 
 // NewRepo creates a new repository
-func NewRepo(a *config.AppConfig) *Repository {
+func NewRepo(a *config.AppConfig, db *driver.DB) *Repository {
 	return &Repository{
 		App: a,
+    DB: dbrepo.NewPostgresRepo(db.SQL, a),
 	}
 }
 
