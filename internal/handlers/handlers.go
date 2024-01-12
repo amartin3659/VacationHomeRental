@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -367,6 +368,35 @@ func (m *Repository) PostMakeReservation(w http.ResponseWriter, r *http.Request)
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
+
+	// send an email to the user
+	htmlMessage := fmt.Sprintf(`
+    <strong>Receipt of your reservation request</strong><br><br>
+    <h1>Dear %s,</h1> <br>
+    we received your reservation request to rent our bungalow "%s" from %s to %s.<br><br>
+    We will get back to you shortly!
+  `, reservation.FullName, res.Bungalow.BungalowName, reservation.StartDate.Format("2006-01-02"), reservation.EndDate.Format("2006-01-02"))
+	msg := models.MailData{
+		To:      reservation.Email,
+		From:    "noreply@bungalow-bliss.com",
+		Subject: "Booking Comfirmation",
+		Content: htmlMessage,
+	}
+	m.App.MailChan <- msg
+
+	// send an email to the user
+	htmlMessage = fmt.Sprintf(`
+    <strong>Receipt of a request for a reservation</strong><br><br>
+    Dear %s: <br>
+    we received your reservation request to rent our bungalow "%s" from %s to %s.
+  `, reservation.FullName, res.Bungalow.BungalowName, reservation.StartDate.Format("2006-01-02"), reservation.EndDate.Format("2006-01-02"))
+	msg = models.MailData{
+    To:      "whoever@is-in-charge.com",
+		From:    "noreply@bungalow-bliss.com",
+		Subject: "Booking Comfirmation",
+		Content: htmlMessage,
+	}
+	m.App.MailChan <- msg
 
 	m.App.Session.Put(r.Context(), "reservation", reservation)
 	http.Redirect(w, r, "/reservation-overview", http.StatusSeeOther)

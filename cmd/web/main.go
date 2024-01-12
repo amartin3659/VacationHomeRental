@@ -26,12 +26,16 @@ var infoLog *log.Logger
 var errorLog *log.Logger
 
 func main() {
-  db, err := run()
-  if err != nil {
-    log.Fatal(err)
-  }
+	db, err := run()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  defer db.SQL.Close()
+	defer db.SQL.Close()
+	defer close(app.MailChan)
+
+	fmt.Println("Starting Email listener")
+	listenForMail()
 
 	fmt.Println("Starting server on port: ", portNumber)
 
@@ -48,20 +52,23 @@ func main() {
 
 func run() (*driver.DB, error) {
 
-  // Data to be available in the session
-  gob.Register(models.Reservation{})
-  gob.Register(models.User{})
-  gob.Register(models.Bungalow{})
-  gob.Register(models.BungalowRestriction{})
-  gob.Register(models.Restriction{})
+	// Data to be available in the session
+	gob.Register(models.Reservation{})
+	gob.Register(models.User{})
+	gob.Register(models.Bungalow{})
+	gob.Register(models.BungalowRestriction{})
+	gob.Register(models.Restriction{})
+
+	mailChan := make(chan models.MailData)
+	app.MailChan = mailChan
 
 	app.InProduction = false
 
-  infoLog = log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime)
-  app.InfoLog = infoLog
-  
-  errorLog = log.New(os.Stdout, "[ERROR]\t", log.Ldate|log.Ltime|log.Lshortfile)
-  app.ErrorLog = errorLog
+	infoLog = log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime)
+	app.InfoLog = infoLog
+
+	errorLog = log.New(os.Stdout, "[ERROR]\t", log.Ldate|log.Ltime|log.Lshortfile)
+	app.ErrorLog = errorLog
 
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
@@ -71,22 +78,22 @@ func run() (*driver.DB, error) {
 
 	app.Session = session
 
-  // connecting to database
-  log.Println("Conecting to database...")
-  env.SetPass()
-  connStr := fmt.Sprintf("host=localhost port=5432 dbname=mygowebapp user=%s password=%s", env.GetUser(), env.GetPass())
-  db, err := driver.ConnectSQL(connStr)
-  if err != nil {
-    log.Fatal("No connection to database! Terminating ...")
-    return nil, err
-  }
-  log.Println("Successfully connected to database.")
+	// connecting to database
+	log.Println("Conecting to database...")
+	env.SetPass()
+	connStr := fmt.Sprintf("host=localhost port=5432 dbname=mygowebapp user=%s password=%s", env.GetUser(), env.GetPass())
+	db, err := driver.ConnectSQL(connStr)
+	if err != nil {
+		log.Fatal("No connection to database! Terminating ...")
+		return nil, err
+	}
+	log.Println("Successfully connected to database.")
 
 	// create a template cache
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatalln("Error creating template cache", err)
-    return nil, err
+		return nil, err
 	}
 
 	app.TemplateCache = tc
@@ -97,7 +104,6 @@ func run() (*driver.DB, error) {
 
 	render.NewRenderer(&app)
 
-  helpers.NewHelpers(&app)
-  return db, nil
+	helpers.NewHelpers(&app)
+	return db, nil
 }
-

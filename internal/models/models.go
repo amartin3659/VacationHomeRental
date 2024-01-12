@@ -46,15 +46,24 @@ type Reservation struct {
 
 // BungalowRestriction is the model of a bungalowrestriction
 type BungalowRestriction struct {
-  ID int
-  StartDate time.Time
-  EndDate time.Time
-  BungalowID int
-  ReservationID int
-  RestrictionID int
-  CreatedAt time.Time
-  UpdatedAt time.Time
-  Bungalow Bungalow
-  Reservation Reservation
-  Restriction Restriction
+	ID            int
+	StartDate     time.Time
+	EndDate       time.Time
+	BungalowID    int
+	ReservationID int
+	RestrictionID int
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	Bungalow      Bungalow
+	Reservation   Reservation
+	Restriction   Restriction
+}
+
+// MailData is a model of an email message
+type MailData struct {
+	To       string
+	From     string
+	Subject  string
+	Content  string
+	Template string
 }
