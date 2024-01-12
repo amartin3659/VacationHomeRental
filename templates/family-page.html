@@ -102,7 +102,9 @@
 
 <div class="row">
   <div class="col text-center">
-    <a href="#!" id="check-availability-button" class="btn btn-success">Check Availability!</a>
+    <a href="#!" id="check-availability-button" class="btn btn-success"
+      >Check Availability!</a
+    >
   </div>
 </div>
 
@@ -127,6 +129,45 @@
       attention.custom({
         title: "Check Bungalow's Availability",
         msg: html,
+        willOpen: () => {
+          const elem = document.getElementById("reservation-dates-modal");
+          const rp = new DateRangePicker(elem, {
+            format: "yyyy-mm-dd",
+            showOnFocus: true,
+            minDate: new Date(),
+          });
+        },
+        didOpen: () => {
+          document.getElementById("start").removeAttribute("disabled"),
+            document.getElementById("end").removeAttribute("disabled");
+        },
+        callback: (result) => {
+          let form = document.getElementById("check-availability-form");
+          let formData = new FormData(form);
+          formData.append("csrf_token", "{{.CSRFToken}}");
+          formData.append("bungalow_id", "3");
+
+          fetch("/reservation-json", {
+            method: "POST",
+            body: formData,
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.ok) {
+                attention.custom({
+                  icon: "success",
+                  showConfirmButton: false,
+                  msg:
+                    "<p>The bungalow is available!</p>" +
+                    `<p><a href="/book-bungalow?id=${data.bungalow_id}&s=${data.start_date}&e=${data.end_date}" class="btn btn-primary">Book Now!</a></p>`,
+                });
+              } else {
+                attention.error({
+                  msg: ":( This holiday home is not available at this time.",
+                });
+              }
+            });
+        },
       });
     });
 </script>
