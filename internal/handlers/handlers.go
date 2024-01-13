@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -490,4 +491,59 @@ func (m *Repository) BookBungalow(w http.ResponseWriter, r *http.Request) {
 
 	m.App.Session.Put(r.Context(), "reservation", res)
 	http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)
+}
+
+// ShowLogin shows the login page
+func (m *Repository) ShowLogin(w http.ResponseWriter, r *http.Request) {
+  render.Template(w, r, "login-page.html", &models.TemplateData{
+    Form: forms.New(nil),
+  })
+}
+
+// PostShowLogin is a handler to authenticate and login user
+func (m *Repository) PostShowLogin(w http.ResponseWriter, r *http.Request) {
+  _ = m.App.Session.RenewToken(r.Context())
+
+  err := r.ParseForm()
+  if err != nil {
+    log.Println(err)
+  }
+
+  email := r.Form.Get("email")
+  password := r.Form.Get("password")
+
+  form := forms.New(r.PostForm)
+  form.Required("email", "password")
+  form.IsEmail("email")
+
+  if !form.Valid() {
+    render.Template(w, r, "login-page.html", &models.TemplateData{
+      Form: form,
+    })
+    return
+  }
+
+  id, _, err := m.DB.Authenticate(email, password)
+  if err != nil {
+    m.App.Session.Put(r.Context(), "error", "Invalid credentials")
+    http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+    return
+  }
+
+  m.App.Session.Put(r.Context(), "user_id", id)
+  m.App.Session.Put(r.Context(), "success", "Successfully logged in")
+  http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// Logout logs out a user
+func (m *Repository) Logout(w http.ResponseWriter, r *http.Request) {
+  _ = m.App.Session.Destroy(r.Context())
+  _ = m.App.Session.RenewToken(r.Context())
+  m.App.Session.Put(r.Context(), "success", "Successfully logged out")
+  http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+}
+
+// AdminDashboard shows an admin dashboard
+func (m *Repository) AdminDashboard(w http.ResponseWriter, r *http.Request) {
+  render.Template(w, r, "admin-dashboard-page.html", &models.TemplateData{})
 }

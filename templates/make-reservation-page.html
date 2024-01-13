@@ -22,7 +22,7 @@
           {{with .Form.Errors.Get "full_name"}}
           <label class="text-danger">{{.}}</label>
           {{end}}
-          <input class="form-control {{with .Form.Errors.Get " full_name"}}is-invalid{{end}}" id="full_name"
+          <input class="form-control {{with .Form.Errors.Get "full_name"}}is-invalid{{end}}" id="full_name"
             autocomplete="off" type="text" name="full_name" value="{{$res.FullName}}" required />
         </div>
 
@@ -31,7 +31,7 @@
           {{with .Form.Errors.Get "email"}}
           <label class="text-danger">{{.}}</label>
           {{end}}
-          <input class="form-control {{with .Form.Errors.Get " email"}}is-invalid{{end}}" id="email" autocomplete="off"
+          <input class="form-control {{with .Form.Errors.Get "email"}}is-invalid{{end}}" id="email" autocomplete="off"
             type="email" name="email" value="{{$res.Email}}" required />
         </div>
 
@@ -40,7 +40,7 @@
           {{with .Form.Errors.Get "phone"}}
           <label class="text-danger">{{.}}</label>
           {{end}}
-          <input class="form-control {{with .Form.Errors.Get " phone"}}is-invalid{{end}}" id="phone" autocomplete="off"
+          <input class="form-control {{with .Form.Errors.Get "phone"}}is-invalid{{end}}" id="phone" autocomplete="off"
             type="tel" name="phone" value="{{$res.Phone}}" required />
         </div>
 

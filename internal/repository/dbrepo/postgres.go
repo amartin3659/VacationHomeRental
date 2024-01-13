@@ -2,9 +2,11 @@ package dbrepo
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/amartin3659/VacationHomeRental/internal/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (m *postgresDBRepo) AllUsers() bool {
@@ -132,28 +134,99 @@ func (m *postgresDBRepo) SearchAvailabilityByDatesForAllBungalows(start, end tim
 
 // GetBungalowByID gets a bungalow by id
 func (m *postgresDBRepo) GetBungalowByID(id int) (models.Bungalow, error) {
-  ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-  var bungalow models.Bungalow
+	var bungalow models.Bungalow
 
-  query := `
+	query := `
     select id, bungalow_name, created_at, updated_at
     from bungalows
     where id = $1;
   `
 
-  row := m.DB.QueryRowContext(ctx, query, id)
-  err := row.Scan(
-      &bungalow.ID,
-      &bungalow.BungalowName,
-      &bungalow.CreatedAt,
-      &bungalow.UpdatedAt,
-    )
+	row := m.DB.QueryRowContext(ctx, query, id)
+	err := row.Scan(
+		&bungalow.ID,
+		&bungalow.BungalowName,
+		&bungalow.CreatedAt,
+		&bungalow.UpdatedAt,
+	)
 
-  if err != nil {
-    return bungalow, err
-  }
+	if err != nil {
+		return bungalow, err
+	}
 
-  return bungalow, nil
+	return bungalow, nil
+}
+
+// GetUserByID returns user data by id
+func (m *postgresDBRepo) GetUserByID(id int) (models.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var user models.User
+
+	query := `
+    select * from users where id = $1;
+  `
+
+	row := m.DB.QueryRowContext(ctx, query, id)
+	err := row.Scan(
+		&user.ID,
+		&user.FullName,
+		&user.Email,
+		&user.Password,
+		&user.Role,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		return user, err
+	}
+
+	return user, nil
+}
+
+// UpdateUser updates basic user data in the database
+func (m *postgresDBRepo) UpdateUser(u models.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+    update users set full_name = $1, email = $2, role = $3, updated_at = $4 where users.id = $5;
+  `
+
+	_, err := m.DB.ExecContext(ctx, query, u.FullName, u.Email, u.Role, time.Now(), u.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Authenticate authenticates a user by data
+func (m *postgresDBRepo) Authenticate(email, testPassword string) (int, string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var id int
+	var passwordHash string
+
+	row := m.DB.QueryRowContext(ctx, "select id, password from users where email = $1", email)
+
+	err := row.Scan(&id, &passwordHash)
+	if err != nil {
+		return id, "", err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(testPassword))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return 0, "", errors.New("Wrong Password")
+	} else if err != nil {
+		return 0, "", err
+	}
+
+	return id, passwordHash, nil
 }

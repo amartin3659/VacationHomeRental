@@ -16,11 +16,11 @@ func TestAddDefaultData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	session.Put(r.Context(), "flash", "a flash message")
+	session.Put(r.Context(), "success", "a success message")
 
 	result := AddDefaultData(&td, r)
-	if result.Flash != "a flash message" {
-		t.Error("expected a value for key flash but flash message not found in session")
+	if result.Success != "a success message" {
+		t.Error("expected a value for key success but success message not found in session")
 	}
 }
 

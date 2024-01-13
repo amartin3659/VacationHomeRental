@@ -1,0 +1,1 @@
+INSERT INTO public.users (full_name, email, password, role, created_at, updated_at) VALUES ('Patrick Star', 'patrick@bikini-bottom.ocean', '$2a$12$gE.zjttEfEYFvAPUxTksgOJfPeJMjjlqpdih37ek64D55psqc6a46', '1', '2020-01-01 00:00:00.000', '2020-01-01 00:00:00.000')
