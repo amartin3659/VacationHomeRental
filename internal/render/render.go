@@ -8,11 +8,21 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/amartin3659/VacationHomeRental/internal/config"
 	"github.com/amartin3659/VacationHomeRental/internal/models"
 	"github.com/justinas/nosurf"
 )
+
+var functions = template.FuncMap{
+  "humanReadableDate": HumanReadableDate, 
+}
+
+// HumanReadableDate returns a time value in the YYYY-MM-DD format
+func HumanReadableDate(t time.Time) string {
+  return t.Format("2006-01-02")
+}
 
 // AddDefaultData contains data which will be added to data sent to templates
 func AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateData {
@@ -82,7 +92,7 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
   // range through the slice of *-page.html
   for _, page := range pages {
     name := filepath.Base(page)
-    ts, err := template.New(name).ParseFiles(page)
+    ts, err := template.New(name).Funcs(functions).ParseFiles(page)
     if err != nil {
       return cache, err
     }

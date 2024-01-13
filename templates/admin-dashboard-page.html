@@ -1,11 +1,11 @@
-{{template "base" .}} {{define "content"}}
+{{template "admin" .}}
+  {{define "page-title"}}
+    Dashboard Page/Section Title
+  {{end}}
 
-<div class="container mt-5">
-  <div class="row">
-    <div class="col">
-      <h1 class="text-center">Secure Admin Dashboard</h1>
+  {{define "content"}}
+    <div class="col-md-12">
+      Dashboard page/section content
     </div>
-  </div>
-</div>
-{{end}}
+  {{end}}
 
