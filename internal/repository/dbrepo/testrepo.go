@@ -105,3 +105,11 @@ func (m *testDBRepo) GetRestrictionsForBungalowByDate(bungalowID int, start, end
 
   return restrictions, nil
 }
+
+func (m *testDBRepo) InsertBlockForBungalow(id int, startDate time.Time) error {
+  return nil
+}
+
+func (m *testDBRepo) DeleteBlockByID(id int) error {
+  return nil
+}
