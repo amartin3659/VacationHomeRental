@@ -17,6 +17,7 @@ import (
 	"github.com/amartin3659/VacationHomeRental/internal/render"
 	"github.com/amartin3659/VacationHomeRental/internal/repository"
 	"github.com/amartin3659/VacationHomeRental/internal/repository/dbrepo"
+	"github.com/go-chi/chi/v5"
 )
 
 type Repository struct {
@@ -392,7 +393,7 @@ func (m *Repository) PostMakeReservation(w http.ResponseWriter, r *http.Request)
     we received your reservation request to rent our bungalow "%s" from %s to %s.
   `, reservation.FullName, res.Bungalow.BungalowName, reservation.StartDate.Format("2006-01-02"), reservation.EndDate.Format("2006-01-02"))
 	msg = models.MailData{
-    To:      "whoever@is-in-charge.com",
+		To:      "whoever@is-in-charge.com",
 		From:    "noreply@bungalow-bliss.com",
 		Subject: "Booking Comfirmation",
 		Content: htmlMessage,
@@ -495,94 +496,274 @@ func (m *Repository) BookBungalow(w http.ResponseWriter, r *http.Request) {
 
 // ShowLogin shows the login page
 func (m *Repository) ShowLogin(w http.ResponseWriter, r *http.Request) {
-  render.Template(w, r, "login-page.html", &models.TemplateData{
-    Form: forms.New(nil),
-  })
+	render.Template(w, r, "login-page.html", &models.TemplateData{
+		Form: forms.New(nil),
+	})
 }
 
 // PostShowLogin is a handler to authenticate and login user
 func (m *Repository) PostShowLogin(w http.ResponseWriter, r *http.Request) {
-  _ = m.App.Session.RenewToken(r.Context())
+	_ = m.App.Session.RenewToken(r.Context())
 
-  err := r.ParseForm()
-  if err != nil {
-    log.Println(err)
-  }
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
 
-  email := r.Form.Get("email")
-  password := r.Form.Get("password")
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
 
-  form := forms.New(r.PostForm)
-  form.Required("email", "password")
-  form.IsEmail("email")
+	form := forms.New(r.PostForm)
+	form.Required("email", "password")
+	form.IsEmail("email")
 
-  if !form.Valid() {
-    render.Template(w, r, "login-page.html", &models.TemplateData{
-      Form: form,
-    })
-    return
-  }
+	if !form.Valid() {
+		render.Template(w, r, "login-page.html", &models.TemplateData{
+			Form: form,
+		})
+		return
+	}
 
-  id, _, err := m.DB.Authenticate(email, password)
-  if err != nil {
-    m.App.Session.Put(r.Context(), "error", "Invalid credentials")
-    http.Redirect(w, r, "/user/login", http.StatusSeeOther)
-    return
-  }
+	id, _, err := m.DB.Authenticate(email, password)
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "Invalid credentials")
+		http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+		return
+	}
 
-  m.App.Session.Put(r.Context(), "user_id", id)
-  m.App.Session.Put(r.Context(), "success", "Successfully logged in")
-  http.Redirect(w, r, "/", http.StatusSeeOther)
+	m.App.Session.Put(r.Context(), "user_id", id)
+	m.App.Session.Put(r.Context(), "success", "Successfully logged in")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // Logout logs out a user
 func (m *Repository) Logout(w http.ResponseWriter, r *http.Request) {
-  _ = m.App.Session.Destroy(r.Context())
-  _ = m.App.Session.RenewToken(r.Context())
-  m.App.Session.Put(r.Context(), "success", "Successfully logged out")
-  http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+	_ = m.App.Session.Destroy(r.Context())
+	_ = m.App.Session.RenewToken(r.Context())
+	m.App.Session.Put(r.Context(), "success", "Successfully logged out")
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
 // AdminDashboard shows an admin dashboard
 func (m *Repository) AdminDashboard(w http.ResponseWriter, r *http.Request) {
-  render.Template(w, r, "admin-dashboard-page.html", &models.TemplateData{})
+	render.Template(w, r, "admin-dashboard-page.html", &models.TemplateData{})
 }
 
-// AdminNewReservations displays new reservations only in admin area 
+// AdminNewReservations displays new reservations only in admin area
 func (m *Repository) AdminNewReservations(w http.ResponseWriter, r *http.Request) {
 
-  reservations, err := m.DB.AllNewReservations()
-  if err != nil {
-    helpers.ServerError(w, err)
-    return
-  }
+	reservations, err := m.DB.AllNewReservations()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
 
-  data := make(map[string]interface{})
-  data["reservations"] = reservations
+	data := make(map[string]interface{})
+	data["reservations"] = reservations
 
-  render.Template(w, r, "admin-new-reservations-page.html", &models.TemplateData{
-    Data: data,
-  })
+	render.Template(w, r, "admin-new-reservations-page.html", &models.TemplateData{
+		Data: data,
+	})
 }
 
 // AdminAllReservations displays all the reservations only in admin area
 func (m *Repository) AdminAllReservations(w http.ResponseWriter, r *http.Request) {
 
-  reservations, err := m.DB.AllReservations()
+	reservations, err := m.DB.AllReservations()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["reservations"] = reservations
+
+	render.Template(w, r, "admin-all-reservations-page.html", &models.TemplateData{
+		Data: data,
+	})
+}
+
+// AdminReservationsCalendar displays a calendar with registrations
+func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) {
+	now := time.Now()
+
+	if r.URL.Query().Get("y") != "" {
+		year, _ := strconv.Atoi(r.URL.Query().Get("y"))
+		month, _ := strconv.Atoi(r.URL.Query().Get("m"))
+		now = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	}
+
+	data := make(map[string]interface{})
+	data["now"] = now
+
+	next := now.AddDate(0, 1, 0)
+	last := now.AddDate(0, -1, 0)
+
+	nextMonth := next.Format("01")
+	nextMonthYear := next.Format("2006")
+
+	lastMonth := last.Format("01")
+	lastMonthYear := last.Format("2006")
+
+	stringMap := make(map[string]string)
+
+	stringMap["next_month"] = nextMonth
+	stringMap["next_month_year"] = nextMonthYear
+
+	stringMap["last_month"] = lastMonth
+	stringMap["last_month_year"] = lastMonthYear
+
+	stringMap["this_month"] = now.Format("01")
+	stringMap["this_month_year"] = now.Format("2006")
+
+	// determine the first and last days of the month to be displayed
+	currentYear, currentMonth, _ := now.Date()
+	currentLocation := now.Location()
+	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+
+	intMap := make(map[string]int)
+	intMap["days_of_month"] = lastOfMonth.Day()
+
+  bungalows, err := m.DB.AllBungalows()
   if err != nil {
     helpers.ServerError(w, err)
     return
   }
 
-  data := make(map[string]interface{})
-  data["reservations"] = reservations
+  data["bungalows"] = bungalows
 
-  render.Template(w, r, "admin-all-reservations-page.html", &models.TemplateData{
-    Data: data,
-  })
+  for _, x := range bungalows {
+    // create maps (one for reservations, one for blocked days)
+    reservationMap := make(map[string]int)
+    blockMap := make(map[string]int)
+
+    // iterate over all days with for-loop over dates and fill the maps
+    for d := firstOfMonth; d.After(lastOfMonth) == false; d=d.AddDate(0, 0, 1) {
+      reservationMap[d.Format("2006-01-2")] = 0
+      blockMap[d.Format("2006-01-2")] = 0
+    }
+
+    // Read in all the restrictions for the bungalow for the current month
+    restrictions, err := m.DB.GetRestrictionsForBungalowByDate(x.ID, firstOfMonth, lastOfMonth)
+    if err != nil {
+      helpers.ServerError(w, err)
+      return
+    }
+
+    for _, y := range restrictions {
+      if y.ReservationID > 0 {
+        // if it is a reservation
+        for d := y.StartDate; d.After(y.EndDate) == false; d = d.AddDate(0, 0, 1) {
+          reservationMap[d.Format("2006-01-2")] = y.ReservationID
+        }
+      } else {
+        // if it is a block
+        blockMap[y.StartDate.Format("2006-01-2")] = y.ID
+      }
+    }
+
+    data[fmt.Sprintf("reservation_map_%d", x.ID)] = reservationMap
+    data[fmt.Sprintf("block_map_%d", x.ID)] = blockMap
+
+    m.App.Session.Put(r.Context(), fmt.Sprintf("block_map_%d", x.ID), blockMap)
+  }
+
+	render.Template(w, r, "admin-reservations-calendar-page.html", &models.TemplateData{
+		StringMap: stringMap,
+		Data:      data,
+		IntMap:    intMap,
+	})
 }
 
-// AdminReservationsCalendar displays a calendar with registrations
-func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) {
-  render.Template(w, r, "admin-reservations-calendar-page.html", &models.TemplateData{})
+// AdminShowReservation shows a reservation in the admin area
+func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request) {
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[4])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	res, err := m.DB.GetReservationByID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["reservation"] = res
+
+	src := exploded[3]
+
+	stringMap := make(map[string]string)
+	stringMap["src"] = src
+
+	render.Template(w, r, "admin-reservations-show-page.html", &models.TemplateData{
+		StringMap: stringMap,
+		Data:      data,
+		Form:      forms.New(nil),
+	})
+}
+
+// AdminPostShowReservation handles a post request to update a reservation
+func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	expoloded := strings.Split(r.RequestURI, "/")
+
+	id, err := strconv.Atoi(expoloded[4])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	res, err := m.DB.GetReservationByID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	res.FullName = r.Form.Get("full_name")
+	res.Email = r.Form.Get("email")
+	res.Phone = r.Form.Get("phone")
+
+	err = m.DB.UpdateReservation(res)
+
+	src := expoloded[3]
+
+	m.App.Session.Put(r.Context(), "success", "Changes saved")
+
+	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+}
+
+// AdminProcessReservation changes the status of a reservation to processed
+func (m *Repository) AdminProcessReservation(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	src := chi.URLParam(r, "src")
+
+	err := m.DB.UpdateStatusOfReservation(id, 1)
+	if err != nil {
+		log.Println(err)
+	}
+
+	m.App.Session.Put(r.Context(), "success", "Reservation successfully marked as processed")
+
+	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+}
+
+// AdminDeleteReservation deletes a reservation from the database
+func (m *Repository) AdminDeleteReservation(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	src := chi.URLParam(r, "src")
+
+	_ = m.DB.DeleteReservation(id)
+
+	m.App.Session.Put(r.Context(), "success", "Reservation successfully deleted")
+
+	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
 }

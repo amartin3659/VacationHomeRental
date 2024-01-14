@@ -111,7 +111,7 @@ func (m *postgresDBRepo) SearchAvailabilityByDatesForAllBungalows(start, end tim
 	if err != nil {
 		return bungalows, err
 	}
-  defer rows.Close()
+	defer rows.Close()
 
 	for rows.Next() {
 		var bungalow models.Bungalow
@@ -196,7 +196,7 @@ func (m *postgresDBRepo) UpdateUser(u models.User) error {
 	defer cancel()
 
 	query := `
-    update users set full_name = $1, email = $2, role = $3, updated_at = $4 where users.id = $5;
+    update users set full_name = $1, email = $2, role = $3, updated_at = $4;
   `
 
 	_, err := m.DB.ExecContext(ctx, query, u.FullName, u.Email, u.Role, time.Now(), u.ID)
@@ -234,13 +234,13 @@ func (m *postgresDBRepo) Authenticate(email, testPassword string) (int, string, 
 
 // AllReservations builds and returns a slice of all reservations from the database
 func (m *postgresDBRepo) AllReservations() ([]models.Reservation, error) {
-  
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-  var reservations []models.Reservation
+	var reservations []models.Reservation
 
-  query := `
+	query := `
     select
       r.id, r.full_name, r.email, r.phone, r.start_date, r.end_date, r.bungalow_id, r.created_at, r.updated_at, r.status,
       b.id, b.bungalow_name
@@ -248,51 +248,51 @@ func (m *postgresDBRepo) AllReservations() ([]models.Reservation, error) {
     left join bungalows b on (r.bungalow_id = b.id)
     order by r.start_date asc
   `
-  rows, err := m.DB.QueryContext(ctx, query)
-  if err != nil {
-    return reservations, err
-  }
-  defer rows.Close()
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return reservations, err
+	}
+	defer rows.Close()
 
-  for rows.Next() {
-    var i models.Reservation
-    err := rows.Scan(
-        &i.ID,
-        &i.FullName,
-        &i.Email,
-        &i.Phone,
-        &i.StartDate,
-        &i.EndDate,
-        &i.BungalowID,
-        &i.CreatedAt,
-        &i.UpdatedAt,
-        &i.Status,
-        &i.Bungalow.ID,
-        &i.Bungalow.BungalowName,
-      )
+	for rows.Next() {
+		var i models.Reservation
+		err := rows.Scan(
+			&i.ID,
+			&i.FullName,
+			&i.Email,
+			&i.Phone,
+			&i.StartDate,
+			&i.EndDate,
+			&i.BungalowID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Status,
+			&i.Bungalow.ID,
+			&i.Bungalow.BungalowName,
+		)
 
-    if err != nil {
-      return reservations, err
-    }
-    reservations = append(reservations, i)
-  }
+		if err != nil {
+			return reservations, err
+		}
+		reservations = append(reservations, i)
+	}
 
-  if err = rows.Err(); err != nil {
-    return reservations, err
-  }
+	if err = rows.Err(); err != nil {
+		return reservations, err
+	}
 
-  return reservations, nil
+	return reservations, nil
 }
 
 // AllNewReservations builds and returns a slice of all new reservations from the database
 func (m *postgresDBRepo) AllNewReservations() ([]models.Reservation, error) {
-  
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-  var reservations []models.Reservation
+	var reservations []models.Reservation
 
-  query := `
+	query := `
     select
       r.id, r.full_name, r.email, r.phone, r.start_date, r.end_date, r.bungalow_id, r.created_at, r.updated_at, r.status,
       b.id, b.bungalow_name
@@ -301,38 +301,211 @@ func (m *postgresDBRepo) AllNewReservations() ([]models.Reservation, error) {
     where r.status = 0
     order by r.start_date asc
   `
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return reservations, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i models.Reservation
+		err := rows.Scan(
+			&i.ID,
+			&i.FullName,
+			&i.Email,
+			&i.Phone,
+			&i.StartDate,
+			&i.EndDate,
+			&i.BungalowID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Status,
+			&i.Bungalow.ID,
+			&i.Bungalow.BungalowName,
+		)
+
+		if err != nil {
+			return reservations, err
+		}
+		reservations = append(reservations, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return reservations, err
+	}
+
+	return reservations, nil
+}
+
+// GetReservationByID returns a reservation by ID
+func (m *postgresDBRepo) GetReservationByID(id int) (models.Reservation, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var res models.Reservation
+
+	query := `
+    select
+      r.id, r.full_name, r.email, r.phone, r.start_date, r.end_date, r.bungalow_id, r.created_at, r.updated_at, r.status,
+      b.id, b.bungalow_name
+    from reservations r
+    left join bungalows b on (r.bungalow_id = b.id)
+    where r.id = $1
+  `
+	rows := m.DB.QueryRowContext(ctx, query, id)
+
+	err := rows.Scan(
+		&res.ID,
+		&res.FullName,
+		&res.Email,
+		&res.Phone,
+		&res.StartDate,
+		&res.EndDate,
+		&res.BungalowID,
+		&res.CreatedAt,
+		&res.UpdatedAt,
+		&res.Status,
+		&res.Bungalow.ID,
+		&res.Bungalow.BungalowName,
+	)
+
+  if err != nil {
+    return res, nil
+  }
+
+	return res, nil
+}
+
+// UpdateReservation updates the data of a reservation in the database
+func (m *postgresDBRepo) UpdateReservation(r models.Reservation) error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+    update reservations set full_name = $1, email = $2, phone = $3, updated_at = $4 where id = $5;
+  `
+
+	_, err := m.DB.ExecContext(ctx, query, r.FullName, r.Email, r.Phone, time.Now(), r.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteReservation by id deletes an entry of a reservation from the database
+func (m *postgresDBRepo) DeleteReservation(id int) error {
+  
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+    delete from reservations where id = $1;
+  `
+
+	_, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateStatusOfReservation by id updates the status of a reservation in the database
+func (m *postgresDBRepo) UpdateStatusOfReservation(id int, status int) error {
+  
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+    update reservations set status = $1 where id = $2;
+  `
+
+	_, err := m.DB.ExecContext(ctx, query, status, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AllBungalows returns a slice of bungalows from the database
+func (m *postgresDBRepo) AllBungalows() ([]models.Bungalow, error) {
+  ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+  defer cancel()
+
+  var bungalows []models.Bungalow
+
+  query := `select id, bungalow_name, created_at, updated_at from bungalows order by id`
+
   rows, err := m.DB.QueryContext(ctx, query)
   if err != nil {
-    return reservations, err
+    return bungalows, err
   }
   defer rows.Close()
 
   for rows.Next() {
-    var i models.Reservation
+    var b models.Bungalow
     err := rows.Scan(
-        &i.ID,
-        &i.FullName,
-        &i.Email,
-        &i.Phone,
-        &i.StartDate,
-        &i.EndDate,
-        &i.BungalowID,
-        &i.CreatedAt,
-        &i.UpdatedAt,
-        &i.Status,
-        &i.Bungalow.ID,
-        &i.Bungalow.BungalowName,
+        &b.ID,
+        &b.BungalowName,
+        &b.CreatedAt,
+        &b.UpdatedAt,
       )
-
     if err != nil {
-      return reservations, err
+      return bungalows, err
     }
-    reservations = append(reservations, i)
+    bungalows = append(bungalows, b)
   }
 
   if err = rows.Err(); err != nil {
-    return reservations, err
+    return bungalows, err
   }
 
-  return reservations, nil
+  return bungalows, nil
+}
+
+// GetRestrictionsForBungalowByDate returns restrictions for a bungalow by date range
+func (m *postgresDBRepo) GetRestrictionsForBungalowByDate(bungalowID int, start, end time.Time) ([]models.BungalowRestriction, error) {
+  ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+  defer cancel()
+
+  var restrictions []models.BungalowRestriction
+
+  query := `
+    select id, coalesce(reservation_id, 0), restriction_id, bungalow_id, start_date, end_date
+    from bungalow_restrictions where $1 < end_date and $2 >= start_date
+    and bungalow_id = $3;
+  `
+
+  rows, err := m.DB.QueryContext(ctx, query, start, end, bungalowID)
+  if err != nil {
+    return nil, err
+  }
+  defer rows.Close()
+
+  for rows.Next() {
+    var r models.BungalowRestriction
+    err :=  rows.Scan(
+        &r.ID,
+        &r.ReservationID,
+        &r.RestrictionID,
+        &r.BungalowID,
+        &r.StartDate,
+        &r.EndDate,
+      )
+    if err != nil {
+      return nil, err
+    }
+
+    restrictions = append(restrictions, r)
+  }
+
+  if err = rows.Err(); err != nil {
+    return nil, err
+  }
+
+  return restrictions, nil
 }
