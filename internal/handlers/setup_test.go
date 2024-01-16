@@ -20,6 +20,38 @@ import (
 	"github.com/justinas/nosurf"
 )
 
+var functions = template.FuncMap{
+	"humanReadableDate": HumanReadableDate,
+	"formatDate":        FormatDate,
+	"iterate":           Iterate,
+	"add":               Add,
+}
+
+// HumanReadableDate returns a time value in the YYYY-MM-DD format
+func HumanReadableDate(t time.Time) string {
+	return t.Format("2006-01-02")
+}
+
+// FormatDate returns a time value in the YYYY-MM-DD format
+func FormatDate(t time.Time, f string) string {
+	return t.Format(f)
+}
+
+// Iterate creates and returns a slice of ints, starting at 1, going to count
+func Iterate(count int) []int {
+	var i int
+	var items []int
+	for i = 0; i < count; i++ {
+		items = append(items, i)
+	}
+
+	return items
+}
+
+func Add(a, b int) int {
+	return a + b
+}
+
 var app config.AppConfig
 var session *scs.SessionManager
 var pathToTemplates = "./../../templates"
@@ -134,7 +166,7 @@ func CreateTestTemplateCache() (map[string]*template.Template, error) {
   // range through the slice of *-page.html
   for _, page := range pages {
     name := filepath.Base(page)
-    ts, err := template.New(name).ParseFiles(page)
+    ts, err := template.New(name).Funcs(functions).ParseFiles(page)
     if err != nil {
       return cache, err
     }

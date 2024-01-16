@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -11,19 +10,25 @@ import (
 	mail "github.com/xhit/go-simple-mail/v2"
 )
 
-func listenForMail() {
+func listenForMail(testFn func(models.MailData)) {
   go func() {
     for {
       msg := <-app.MailChan
       sendMSG(msg)
+      testFn(msg)
     }
   }()
 }
 
-func sendMSG(m models.MailData) {
-
+func sendMSG(m models.MailData, host ...string) {
+  var hostString string
+  if len(host) > 0 {
+    hostString = host[0] 
+  } else {
+    hostString = "localhost"
+  }
   server := mail.NewSMTPClient()
-  server.Host = "localhost"
+  server.Host = hostString
   server.Port = 1025
   server.KeepAlive = false
   server.ConnectTimeout = 10 * time.Second
@@ -31,7 +36,8 @@ func sendMSG(m models.MailData) {
 
   client, err := server.Connect()
   if err != nil {
-    errorLog.Println(err)
+    errorLog.Println("Did not connect", err)
+    return
   }
 
   email := mail.NewMSG()
@@ -39,9 +45,9 @@ func sendMSG(m models.MailData) {
   if m.Template == "" {
     email.SetBody(mail.TextHTML, m.Content)
   } else {
-    data, err := os.ReadFile(fmt.Sprintf("./static/email/templates/%s.html", m.Template))
+    data, err := os.ReadFile(fmt.Sprintf("./../../static/email/templates/%s.html", m.Template))
     if err != nil {
-      app.ErrorLog.Println(err) 
+      errorLog.Println("Error reading file", err) 
     }
     mailTemplate := string(data)
     msgToSend := strings.Replace(mailTemplate, "[%E-MAIL-CONTENT%]", m.Content, 1)
@@ -50,8 +56,8 @@ func sendMSG(m models.MailData) {
 
   err = email.Send(client)
   if err != nil {
-    log.Println(err)
+    errorLog.Println("Could not send email", err)
   } else {
-    log.Println("email sent out!")
+    infoLog.Println("email sent out!")
   }
 }

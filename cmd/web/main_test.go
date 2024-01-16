@@ -1,6 +1,13 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
+
+func TestMain(m *testing.M) {
+  os.Exit(m.Run())
+}
 
 func TestRun(t *testing.T) {
   _, err := run()
