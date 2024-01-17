@@ -40,8 +40,8 @@ func TestValidAuth(t *testing.T) {
   mux := routes(&app)
   
 	req, _ := http.NewRequest("GET", "/admin/dashboard", nil)
-	ctx := getCtx(req)
-	req = req.WithContext(ctx)
+	//ctx := getCtx(req)
+	//req = req.WithContext(ctx)
 
 	// rr means "request recorder" and is an initialized response recorder for http requests builtin the test
 	// basically "faking" a client and to provide a valid request/response-cycle during tests

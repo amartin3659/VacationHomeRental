@@ -2,6 +2,7 @@ package dbrepo
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/amartin3659/VacationHomeRental/internal/models"
@@ -28,12 +29,78 @@ func (m *testDBRepo) InsertBungalowRestriction(r models.BungalowRestriction) err
 
 // SearchAvailabilityByDatesByBungalowID returns true if there is availability for a bungalow between date range, false if not
 func (m *testDBRepo) SearchAvailabilityByDatesByBungalowID(start, end time.Time, bungalowID int) (bool, error) {
-	return false, nil
+  // set up a test time
+	layout := "2006-01-02"
+	str := "2036-12-31"
+	t, err := time.Parse(layout, str)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// this is our test to fail the query -- specify 2038-01-01 as start
+	testDateToFail, err := time.Parse(layout, "2038-01-01")
+	if err != nil {
+		log.Println(err)
+	}
+
+	if start == testDateToFail {
+		return false, errors.New("some error")
+	}
+
+	// if the start date is after 2036-12-31, then return false,
+	// indicating no availability;
+	if start.After(t) {
+		return false, nil
+	}
+
+	// otherwise, we have availability
+	return true, nil
 }
 
 // SearchAvailabilityByDatesForAllBungalows returns a slice of available bungalows, if any for a queried date range
 func (m *testDBRepo) SearchAvailabilityByDatesForAllBungalows(start, end time.Time) ([]models.Bungalow, error) {
 	var bungalows []models.Bungalow
+  
+  // set up a test time
+	layout := "2006-01-02"
+	str := "2036-12-31"
+	t, err := time.Parse(layout, str)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// this is our test to fail the query -- specify 2038-01-01 as start
+	testDateToFail, err := time.Parse(layout, "2038-01-01")
+	if err != nil {
+		log.Println(err)
+	}
+
+	if start == testDateToFail {
+		return nil, errors.New("some error")
+	}
+
+	// if the start date is after 2036-12-31, then return 0 bungalows,
+	// indicating no availability;
+	if start.After(t) {
+    bungalows = make([]models.Bungalow, 0)
+		return bungalows, nil
+	}
+
+	// otherwise, we have availability
+  bungalows = []models.Bungalow{
+    {
+      ID: 1,
+      BungalowName: "Name 1",
+      CreatedAt: time.Now(),
+      UpdatedAt: time.Now(),
+    },
+    {
+      ID: 1,
+      BungalowName: "Name 1",
+      CreatedAt: time.Now(),
+      UpdatedAt: time.Now(),
+    },
+  }
 	return bungalows, nil
 }
 

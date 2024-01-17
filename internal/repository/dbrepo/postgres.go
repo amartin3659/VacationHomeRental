@@ -73,7 +73,6 @@ func (m *postgresDBRepo) SearchAvailabilityByDatesByBungalowID(start, end time.T
       bungalow_id = $1 and
       $2 <= end_date and $3 >= start_date;
   `
-
 	row := m.DB.QueryRowContext(ctx, query, bungalowID, start, end)
 	err := row.Scan(&numRows)
 	if err != nil {

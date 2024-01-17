@@ -153,7 +153,6 @@ type jsonResponse struct {
 
 // ReservationJSON is the handler for reservation-json and returns JSON
 func (m *Repository) ReservationJSON(w http.ResponseWriter, r *http.Request) {
-
 	// parse request body
 	err := r.ParseForm()
 	if err != nil {
@@ -213,7 +212,7 @@ func (m *Repository) ReservationJSON(w http.ResponseWriter, r *http.Request) {
 
 	resp := jsonResponse{
 		OK:         available,
-		Message:    "",
+		Message:    "Available",
 		StartDate:  sd,
 		EndDate:    ed,
 		BungalowID: strconv.Itoa(bungalowID),
