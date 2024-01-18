@@ -13,6 +13,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/amartin3659/VacationHomeRental/internal/config"
+	"github.com/amartin3659/VacationHomeRental/internal/helpers"
 	"github.com/amartin3659/VacationHomeRental/internal/models"
 	"github.com/amartin3659/VacationHomeRental/internal/render"
 	"github.com/go-chi/chi/v5"
@@ -96,6 +97,7 @@ func TestMain(m *testing.M) {
 	NewHandlers(repo)
 
 	render.NewRenderer(&app)
+	helpers.NewHelpers(&app)
 
   os.Exit(m.Run())
 }

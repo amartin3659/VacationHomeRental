@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1113,23 +1115,237 @@ func TestRepository_PostShowLogin(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Errorf("Expected status code %d, but got status code %d", http.StatusSeeOther, rr.Code)
 	}
+  // check to see if user id is in session
+  uid, ok := app.Session.Get(ctx, "user_id").(int)
+  if !ok {
+    t.Error("Error getting session data")
+  }
+  if uid != 1 {
+    t.Errorf("No user id in session after login, expected id %d, but got id %d", 1, uid)
+  }
+
+  // Logout
+  req = httptest.NewRequest("GET", "/user/logout", nil)
+  uid, ok = app.Session.Get(ctx, "user_id").(int)
+  if !ok || uid != 1 {
+    t.Errorf("Expected there to be user_id = %d in session, but user_id = %d or no session", 1, uid)
+  }
+  ctx = getCtx(req)
+	req = req.WithContext(ctx)
+  app.Session.Put(ctx, "user_id", 1)
+  uid, ok = app.Session.Get(ctx, "user_id").(int)
+  if !ok || uid != 1 {
+    t.Errorf("Expected there to be user_id = %d in session, but user_id = %d or no session", 1, uid)
+  }
+  rr = httptest.NewRecorder()
+  handler = http.HandlerFunc(Repo.Logout)
+  handler.ServeHTTP(rr, req)
+  if rr.Code != http.StatusSeeOther {
+    t.Errorf("Expected status code %d, but got status %d", http.StatusSeeOther, rr.Code)
+  }
+  uid, ok = app.Session.Get(ctx, "user_id").(int)
+  if ok || uid != 0 {
+    t.Errorf("Expected there to be user_id = %d and no session, but user_id = %d", 0, uid) 
+  }
 }
-// Logout
 
 // AdminDashboard
+func TestRepository_AdminDashboard(t *testing.T) {
+  
+	// -- test variables
+	var req *http.Request
+	var ctx context.Context
+	var rr *httptest.ResponseRecorder
+	var handler http.Handler
+
+	// case #1: OK
+	req, _ = http.NewRequest("GET", "/admin/dashboard", nil)
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.AdminDashboard)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusOK, rr.Code)
+	}
+}
 
 // AdminNewReservations
+func TestRepository_AdminNewReservations(t *testing.T) {
+
+  // mux.Get("/reservations-new", handlers.Repo.AdminNewReservations)
+	// -- test variables
+	var req *http.Request
+	var ctx context.Context
+	var rr *httptest.ResponseRecorder
+	var handler http.Handler
+
+	// case #1: OK
+	req, _ = http.NewRequest("GET", "/admin/reservations-new", nil)
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.AdminNewReservations)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusOK, rr.Code)
+	}
+}
 
 // AdminAllReservations
+func TestRepository_AdminAllReservations(t *testing.T) {
+
+	// -- test variables
+	var req *http.Request
+	var ctx context.Context
+	var rr *httptest.ResponseRecorder
+	var handler http.Handler
+
+	// case #1: OK
+	req, _ = http.NewRequest("GET", "/admin/reservations-all", nil)
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.AdminAllReservations)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusOK, rr.Code)
+	}
+}
 
 // AdminReservationsCalendar
+func TestRepository_AdminReservationsCalendar(t *testing.T) {
+
+	// -- test variables
+	var req *http.Request
+	var ctx context.Context
+	var rr *httptest.ResponseRecorder
+	var handler http.Handler
+
+	// case #1: OK
+	req, _ = http.NewRequest("GET", "/admin/reservations-calendar", nil)
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.AdminReservationsCalendar)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusOK, rr.Code)
+	}
+}
 
 // AdminShowReservation
+func TestRepository_AdminShowReservation(t *testing.T) {
+
+  //mux.Get("/reservations/{src}/{id}/show", handlers.Repo.AdminShowReservation)
+	// -- test variables
+	var req *http.Request
+	var ctx context.Context
+	var rr *httptest.ResponseRecorder
+	var handler http.Handler
+
+	// case #1: OK
+	req = httptest.NewRequest("GET", "/admin/reservations/all/1/show", nil)
+  // -- set request URI
+  req.RequestURI = "/admin/reservations/all/1/show"
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.AdminShowReservation)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusOK, rr.Code)
+	}
+
+  // case #2: Cannot parse URI
+	req = httptest.NewRequest("GET", "/admin/reservations/all/invalid/show", nil)
+  // -- set request URI
+  req.RequestURI = "/admin/reservations/all/invalid/show"
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+  // -- set up logging
+  var errBuf bytes.Buffer
+  defer func() {
+    app.ErrorLog.SetOutput(os.Stdout)
+  }()
+  app.ErrorLog.SetOutput(&errBuf)
+	// -- create handler
+	handler = http.HandlerFunc(Repo.AdminShowReservation)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+  errOutput := errBuf.String()
+  if !strings.Contains(errOutput, "parsing \"invalid\"") {
+    t.Error("Explected an error to be logged trying to convert 'invalid' to int")
+  }
+
+  // case #3: Id not in db
+	req = httptest.NewRequest("GET", "/admin/reservations/all/4/show", nil)
+  // -- set request URI
+  req.RequestURI = "/admin/reservations/all/4/show"
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+  // -- set up logging
+  defer func() {
+    app.ErrorLog.SetOutput(os.Stdout)
+  }()
+  app.ErrorLog.SetOutput(&errBuf)
+	// -- create handler
+	handler = http.HandlerFunc(Repo.AdminShowReservation)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+  errOutput = errBuf.String()
+  if !strings.Contains(errOutput, "invalid id"){
+    t.Error("Expected an error to be logged about invalid id")
+  }
+}
 
 // AdminPostShowReservation
+func TestRepository_AdminPostShowReservation(t *testing.T) {
+
+}
 
 // AdminProcessReservation
+func TestRepository_AdminProcessReservation(t *testing.T) {
+
+}
 
 // AdminDeleteReservation
+func TestRepository_AdminDeleteReservation(t *testing.T) {
+
+}
 
 // AdminPostReservationsCalendar
+func TestRepository_AdminPostReservationsCalendar(t *testing.T) {
+
+}

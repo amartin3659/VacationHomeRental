@@ -87,7 +87,6 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 
 // PostReservation is the handler for the reservation page and POST requests
 func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
-
 	err := r.ParseForm()
 	if err != nil {
 		m.App.Session.Put(r.Context(), "error", "can't parse form")
@@ -99,9 +98,10 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	ed := r.Form.Get("end")
 
 	layout := "2006-01-02"
-
+fmt.Println(sd)
 	startDate, err := time.Parse(layout, sd)
 	if err != nil {
+    fmt.Println("error parse start")
 		m.App.Session.Put(r.Context(), "error", "can't get data from form")
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
@@ -109,6 +109,7 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 
 	endDate, err := time.Parse(layout, ed)
 	if err != nil {
+    fmt.Println("error parse end")
 		m.App.Session.Put(r.Context(), "error", "can't get data from form")
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
@@ -116,12 +117,14 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 
 	bungalows, err := m.DB.SearchAvailabilityByDatesForAllBungalows(startDate, endDate)
 	if err != nil {
+    fmt.Println("error db")
 		m.App.Session.Put(r.Context(), "error", "can't get data from database")
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	if len(bungalows) == 0 {
+    fmt.Println("error len = 0")
 		m.App.Session.Put(r.Context(), "error", ":( No holiday home is available at that time.")
 		http.Redirect(w, r, "/reservation", http.StatusSeeOther)
 		return
@@ -136,7 +139,7 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m.App.Session.Put(r.Context(), "reservation", res)
-
+  fmt.Println("here")
 	render.Template(w, r, "choose-bungalow-page.html", &models.TemplateData{
 		Data: data,
 	})
@@ -504,10 +507,11 @@ func (m *Repository) PostShowLogin(w http.ResponseWriter, r *http.Request) {
 	form.IsEmail("email")
 
 	if !form.Valid() {
-    m.App.Session.Put(r.Context(), "error", "Invalid login credentials")
     render.Template(w, r, "login-page.html", &models.TemplateData{
 			Form: form,
 		})
+    // IMPORTANT: add sessoin info after rendering template or else session is lost
+    m.App.Session.Put(r.Context(), "error", "Invalid login credentials")
 		return
 	}
 
@@ -673,12 +677,14 @@ func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request
 	id, err := strconv.Atoi(exploded[4])
 	if err != nil {
 		helpers.ServerError(w, err)
+    http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	res, err := m.DB.GetReservationByID(id)
 	if err != nil {
 		helpers.ServerError(w, err)
+    http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
