@@ -932,9 +932,188 @@ func TestRepository_BookBungalow(t *testing.T) {
 }
 
 // ShowLogin
+func TestRepository_ShowLogin(t *testing.T) {
+    
+	// test variables
+	var req *http.Request
+	var ctx context.Context
+	var rr *httptest.ResponseRecorder
+	var handler http.Handler
+
+	// case #1: OK
+
+	// -- create request
+	req = httptest.NewRequest("GET", "/user/login", nil)
+	// -- create ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.ShowLogin)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected response code: %d, got response code: %d", http.StatusOK, rr.Code)
+	}
+}
 
 // PostShowLogin
+func TestRepository_PostShowLogin(t *testing.T) {
 
+	// -- test variables
+	var postData url.Values
+	var req *http.Request
+	var ctx context.Context
+	var rr *httptest.ResponseRecorder
+	var handler http.Handler
+
+	// case #1: no form data in body
+	// -- create request body
+	// -- create request
+	req, _ = http.NewRequest("POST", "/user/login", nil)
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.PostShowLogin)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusTemporaryRedirect, rr.Code)
+	}
+
+	// case #2: no email provided
+	// -- create request body
+	postData = url.Values{}
+	postData.Add("password", "pass123")
+	// -- create request
+	req = httptest.NewRequest("POST", "/user/login", strings.NewReader(postData.Encode()))
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.PostShowLogin)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+  error, ok := app.Session.Get(ctx, "error").(string)
+  if !ok {
+    t.Error("Error getting session info")
+  }
+	if error != "Invalid login credentials" {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusTemporaryRedirect, rr.Code)
+	}
+
+	// case #3: no password provided
+	// -- create request body
+	postData = url.Values{}
+	postData.Add("email", "email@test.com")
+	// -- create request
+	req = httptest.NewRequest("POST", "/user/login", strings.NewReader(postData.Encode()))
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.PostShowLogin)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+  error, ok = app.Session.Get(ctx, "error").(string)
+  if !ok {
+    t.Error("Error getting session info")
+  }
+	if error != "Invalid login credentials" {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusTemporaryRedirect, rr.Code)
+	}
+
+	// case #4: invalid email
+	// -- create request body
+	postData = url.Values{}
+	postData.Add("email", "email")
+  postData.Add("password", "pass123")
+	// -- create request
+	req = httptest.NewRequest("POST", "/user/login", strings.NewReader(postData.Encode()))
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.PostShowLogin)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+  error, ok = app.Session.Get(ctx, "error").(string)
+  if !ok {
+    t.Error("Error getting session info")
+  }
+	if error != "Invalid login credentials" {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusTemporaryRedirect, rr.Code)
+	}
+
+	// case #5: not a user
+	// -- create request body
+	postData = url.Values{}
+	postData.Add("email", "email@test.com")
+  postData.Add("password", "pass123")
+	// -- create request
+	req = httptest.NewRequest("POST", "/user/login", strings.NewReader(postData.Encode()))
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.PostShowLogin)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusTemporaryRedirect, rr.Code)
+	}
+  
+	// case #6: OK
+	// -- create request body
+	postData = url.Values{}
+	postData.Add("email", "validemail@test.com")
+  postData.Add("password", "pass123")
+	// -- create request
+	req = httptest.NewRequest("POST", "/user/login", strings.NewReader(postData.Encode()))
+	// -- get ctx
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	// -- set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// -- create response recorder
+	rr = httptest.NewRecorder()
+	// -- create handler
+	handler = http.HandlerFunc(Repo.PostShowLogin)
+	// -- make request
+	handler.ServeHTTP(rr, req)
+	// -- check response
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("Expected status code %d, but got status code %d", http.StatusSeeOther, rr.Code)
+	}
+}
 // Logout
 
 // AdminDashboard
